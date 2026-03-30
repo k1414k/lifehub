@@ -1,0 +1,28 @@
+# Bundler
+/.bundle
+/vendor/bundle
+
+# Build artifacts
+/tmp
+/log/*.log
+/storage/*
+!/storage/.keep
+
+# Sensitive
+.env
+.env.*
+config/master.key
+config/credentials/*.key
+
+# DB
+/db/*.sqlite3
+
+# PID
+/tmp/pids/*.pid
+
+# Coverage
+/coverage
+
+# Node (for webpacker/asset pipeline)
+/node_modules
+yarn-error.log
