@@ -14,7 +14,7 @@ import {
 
 const navItems = [
   { href: "/dashboard",  label: "ダッシュボード", icon: LayoutDashboard },
-  { href: "/money",      label: "お金管理",       icon: Wallet },
+  { href: "/money",      label: "資産管理",       icon: Wallet },
   { href: "/memos",      label: "メモ",           icon: StickyNote },
   { href: "/files",      label: "ファイル管理",   icon: FolderOpen },
 ];

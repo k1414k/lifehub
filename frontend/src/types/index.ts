@@ -6,7 +6,48 @@ export interface User {
   created_at: string;
 }
 
-// ========== Money ==========
+// ========== Assets ==========
+export interface AssetItem {
+  id: number;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssetForm {
+  name: string;
+  description?: string;
+}
+
+export interface AssetSnapshot {
+  id: number;
+  asset_item_id: number;
+  amount: number | string;
+  recorded_on: string;
+  note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssetSnapshotForm {
+  asset_item_id: number;
+  amount: number;
+  recorded_on: string;
+  note?: string;
+}
+
+export interface AssetSnapshotBatchForm {
+  recorded_on: string;
+  note?: string;
+  items: Array<{
+    asset_item_id: number;
+    amount: number;
+    note?: string;
+  }>;
+}
+
+// ========== Legacy Money ==========
 export type TransactionType = "income" | "expense";
 
 export interface Transaction {

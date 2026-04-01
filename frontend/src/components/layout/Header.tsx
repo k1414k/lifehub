@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const pageLabels: Record<string, string> = {
   "/dashboard": "ダッシュボード",
-  "/money": "お金管理",
+  "/money": "資産管理",
   "/memos": "メモ",
   "/files": "ファイル管理",
 };
