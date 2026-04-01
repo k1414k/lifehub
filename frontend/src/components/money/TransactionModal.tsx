@@ -49,13 +49,13 @@ export default function TransactionModal({ open, onClose }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-xl sm:max-w-md sm:rounded-2xl">
+        <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-4 py-4 sm:px-6">
           <h2 className="font-semibold text-slate-800">取引を追加</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100"><X size={16} /></button>
         </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-4 sm:p-6">
           <div className="flex rounded-xl border border-slate-200 overflow-hidden">
             {(["expense", "income"] as const).map((t) => (
               <label key={t} className={`flex-1 text-center py-2 text-sm font-medium cursor-pointer transition-colors
@@ -74,7 +74,7 @@ export default function TransactionModal({ open, onClose }: Props) {
             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="label">金額 (¥)</label>
               <input type="number" className="input" placeholder="0" {...register("amount")} />
@@ -100,7 +100,7 @@ export default function TransactionModal({ open, onClose }: Props) {
             <textarea className="input" rows={2} placeholder="備考など" {...register("note")} />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
             <button type="button" onClick={onClose} className="btn-ghost flex-1 justify-center">キャンセル</button>
             <button type="submit" disabled={createMutation.isPending} className="btn-primary flex-1 justify-center">
               {createMutation.isPending ? "保存中..." : "保存"}

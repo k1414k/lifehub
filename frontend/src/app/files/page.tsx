@@ -29,14 +29,14 @@ export default function FilesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 sm:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold text-slate-900">ファイル管理</h1>
+          <h1 className="text-xl font-display font-bold text-slate-900 sm:text-2xl">ファイル管理</h1>
           <p className="text-sm text-slate-500 mt-1">{files.length} 件のファイル</p>
         </div>
         <button onClick={() => inputRef.current?.click()}
-          disabled={uploadMutation.isPending} className="btn-primary">
+          disabled={uploadMutation.isPending} className="btn-primary w-full justify-center sm:w-auto">
           <Upload size={16} />
           {uploadMutation.isPending ? "アップロード中..." : "アップロード"}
         </button>
@@ -49,7 +49,7 @@ export default function FilesPage() {
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
         onClick={() => inputRef.current?.click()}
-        className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors
+        className={`cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-colors sm:p-10
           ${dragOver ? "border-brand-400 bg-brand-50" : "border-slate-200 hover:border-brand-300 hover:bg-slate-50"}`}
       >
         <FolderOpen size={32} className={`mx-auto mb-3 ${dragOver ? "text-brand-500" : "text-slate-300"}`} />
@@ -58,13 +58,13 @@ export default function FilesPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="card h-24 animate-pulse" />)}
         </div>
       ) : files.length === 0 ? (
         <p className="text-sm text-slate-400 text-center py-8">ファイルがありません</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {files.map((f: FileItem) => (
             <div key={f.id} className="card hover:shadow-card-hover transition-shadow group">
               <div className="flex items-start gap-3">
@@ -79,7 +79,7 @@ export default function FilesPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-3 flex gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                 <a href={f.url} target="_blank" rel="noreferrer"
                   className="btn-ghost py-1 text-xs flex-1 justify-center">
                   <Download size={12} /> 開く

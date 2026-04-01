@@ -31,7 +31,7 @@ export default function MoneyChart() {
   return (
     <div className="card">
       <h2 className="font-semibold text-slate-800 mb-4">月別収支</h2>
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={240}>
         <BarChart data={chartData} barCategoryGap="30%">
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
           <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />

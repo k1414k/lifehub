@@ -47,9 +47,9 @@ export default function DashboardPage() {
   const pinnedMemos = memos.filter((m) => m.pinned).slice(0, 3);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-bold text-slate-900">ダッシュボード</h1>
+        <h1 className="text-xl font-display font-bold text-slate-900 sm:text-2xl">ダッシュボード</h1>
         <p className="text-sm text-slate-500 mt-1">{format(now, "yyyy年M月d日（E）", { locale: ja })}</p>
       </div>
 
@@ -60,11 +60,11 @@ export default function DashboardPage() {
           { label: "今月の残高", value: `¥${thisMonth.balance.toLocaleString()}`,  icon: <Wallet size={18} />,      color: "bg-brand-50 text-brand-600" },
           { label: "メモ / ファイル", value: `${memos.length} / ${files.length}`, icon: <StickyNote size={18} />,  color: "bg-violet-50 text-violet-600" },
         ].map((c) => (
-          <div key={c.label} className="card flex items-center gap-4">
+          <div key={c.label} className="card flex items-center gap-3 sm:gap-4">
             <div className={`p-2.5 rounded-xl shrink-0 ${c.color}`}>{c.icon}</div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-slate-500 truncate">{c.label}</p>
-              <p className="text-xl font-display font-bold text-slate-900 mt-0.5 tabular-nums">{c.value}</p>
+              <p className="mt-0.5 text-lg font-display font-bold tabular-nums text-slate-900 sm:text-xl">{c.value}</p>
             </div>
           </div>
         ))}
@@ -73,7 +73,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="card lg:col-span-3">
           <h2 className="font-semibold text-slate-800 mb-4">収支推移（6ヶ月）</h2>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="gi" x1="0" y1="0" x2="0" y2="1">
@@ -107,12 +107,12 @@ export default function DashboardPage() {
           ) : (
             <ul className="space-y-2">
               {recentTransactions.map((t) => (
-                <li key={t.id} className="flex items-center justify-between">
-                  <div className="min-w-0">
+                <li key={t.id} className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-slate-700 truncate">{t.title}</p>
                     <p className="text-xs text-slate-400">{t.category}</p>
                   </div>
-                  <span className={`text-sm font-semibold tabular-nums ml-3 shrink-0 ${t.transaction_type === "income" ? "text-emerald-600" : "text-red-500"}`}>
+                  <span className={`shrink-0 text-sm font-semibold tabular-nums ${t.transaction_type === "income" ? "text-emerald-600" : "text-red-500"}`}>
                     {t.transaction_type === "income" ? "+" : "-"}¥{Number(t.amount).toLocaleString()}
                   </span>
                 </li>
@@ -128,7 +128,7 @@ export default function DashboardPage() {
             <h2 className="font-semibold text-slate-800">ピン留めメモ</h2>
             <Link href="/memos" className="text-xs text-brand-600 hover:underline flex items-center gap-1">すべて <ArrowRight size={12} /></Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {pinnedMemos.map((m) => (
               <Link key={m.id} href="/memos" className="card hover:shadow-card-hover transition-shadow block">
                 <p className="text-sm font-semibold text-slate-800 truncate">{m.title}</p>
@@ -139,16 +139,16 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[
           { href: "/money", label: "お金を記録する", icon: <Wallet size={20} />,    color: "bg-emerald-50 text-emerald-600" },
           { href: "/memos", label: "メモを書く",     icon: <StickyNote size={20} />, color: "bg-violet-50 text-violet-600" },
           { href: "/files", label: "ファイルを管理", icon: <FolderOpen size={20} />, color: "bg-brand-50 text-brand-600" },
         ].map((item) => (
           <Link key={item.href} href={item.href}
-            className="card flex items-center gap-4 hover:shadow-card-hover transition-shadow group">
+            className="card group flex items-center gap-4 hover:shadow-card-hover transition-shadow">
             <div className={`p-2.5 rounded-xl ${item.color}`}>{item.icon}</div>
-            <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{item.label}</span>
+            <span className="min-w-0 flex-1 text-sm font-medium text-slate-700 group-hover:text-slate-900">{item.label}</span>
             <ArrowRight size={14} className="ml-auto text-slate-300 group-hover:text-slate-500 transition-colors" />
           </Link>
         ))}

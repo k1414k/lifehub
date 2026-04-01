@@ -25,7 +25,8 @@ export default function MemoCard({ memo, active, onClick, onDelete }: Props) {
           {memo.pinned && <Pin size={12} className="text-brand-400" />}
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 transition-all"
+            className="rounded p-0.5 transition-all hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+            aria-label={`${memo.title || "メモ"} を削除`}
           >
             <Trash2 size={12} />
           </button>
