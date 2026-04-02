@@ -258,7 +258,7 @@ export default function AssetSnapshotForm({
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="label">金額 (¥)</label>
+                <label className="label">金額（円）</label>
                 <input type="number" className="input" placeholder="0" {...register("amount")} />
                 {errors.amount && <p className="mt-1 text-xs text-red-500">{errors.amount.message}</p>}
               </div>
@@ -287,7 +287,7 @@ export default function AssetSnapshotForm({
                 {assetSummaries.map((summary) => (
                   <div key={summary.asset.id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="text-slate-600">{summary.asset.name}</span>
-                    <span className="font-medium text-slate-900">
+                    <span className="amount-text font-medium text-slate-900">
                       {summary.currentValue == null ? "未記録" : formatCurrency(summary.currentValue)}
                     </span>
                   </div>
@@ -347,7 +347,9 @@ export default function AssetSnapshotForm({
                         <p className="text-sm font-semibold text-slate-900">{asset.name}</p>
                         <p className="mt-1 text-xs text-slate-500">
                           現在値:{" "}
-                          {summary?.currentValue == null ? "未記録" : formatCurrency(summary.currentValue)}
+                          <span className="amount-text">
+                            {summary?.currentValue == null ? "未記録" : formatCurrency(summary.currentValue)}
+                          </span>
                         </p>
                       </div>
                     </div>

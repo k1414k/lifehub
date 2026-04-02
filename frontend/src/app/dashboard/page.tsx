@@ -75,7 +75,7 @@ export default function DashboardPage() {
             <div className={`p-2.5 rounded-xl shrink-0 ${c.color}`}>{c.icon}</div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-slate-500 truncate">{c.label}</p>
-              <p className="mt-0.5 text-lg font-display font-bold tabular-nums text-slate-900 sm:text-xl">{c.value}</p>
+              <p className="amount-text mt-1 text-lg font-bold text-slate-900 sm:text-xl">{c.value}</p>
             </div>
           </div>
         ))}
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                     </p>
                     <p className="text-xs text-slate-400">{formatRecordedOn(snapshot.recorded_on)}</p>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+                  <span className="amount-text shrink-0 text-sm font-semibold text-slate-900">
                     {formatCurrency(Number(snapshot.amount))}
                   </span>
                 </li>

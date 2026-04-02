@@ -54,7 +54,7 @@ export default function AssetSnapshotHistory({
                 </div>
 
                 <div className="flex items-center justify-between gap-3 sm:justify-end">
-                  <p className="text-sm font-semibold tabular-nums text-slate-900">
+                  <p className="amount-text text-sm font-semibold text-slate-900">
                     {formatCurrency(Number(snapshot.amount))}
                   </p>
                   <div className="flex items-center gap-1">

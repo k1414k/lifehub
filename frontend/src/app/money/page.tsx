@@ -129,7 +129,7 @@ export default function MoneyPage() {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-slate-500">総資産</p>
-              <p className="mt-0.5 text-xl font-display font-bold text-slate-900 sm:text-2xl">
+              <p className="amount-text mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
                 {portfolioSummary.totalValue == null ? "未記録" : formatCurrency(portfolioSummary.totalValue)}
               </p>
             </div>
@@ -142,7 +142,7 @@ export default function MoneyPage() {
             <div className="min-w-0">
               <p className="text-xs font-medium text-slate-500">前回記録比</p>
               <p
-                className={`mt-0.5 text-xl font-display font-bold sm:text-2xl ${
+                className={`amount-text mt-1 text-xl font-bold sm:text-2xl ${
                   portfolioSummary.change == null
                     ? "text-slate-900"
                     : portfolioSummary.change >= 0
@@ -173,7 +173,7 @@ export default function MoneyPage() {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-slate-500">登録中の資産項目数</p>
-              <p className="mt-0.5 text-xl font-display font-bold text-slate-900 sm:text-2xl">
+              <p className="amount-text mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
                 {portfolioSummary.assetCount}
               </p>
             </div>
@@ -223,7 +223,10 @@ export default function MoneyPage() {
                 </select>
                 {selectedSummary && (
                   <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-xs text-slate-500">
-                    現在値 {selectedSummary.currentValue == null ? "未記録" : formatCurrency(selectedSummary.currentValue)}
+                    現在値{" "}
+                    <span className="amount-text inline-block">
+                      {selectedSummary.currentValue == null ? "未記録" : formatCurrency(selectedSummary.currentValue)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -272,7 +275,7 @@ export default function MoneyPage() {
               <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                 <p className="text-xs font-medium text-slate-400">前回との差分</p>
                 <p
-                  className={`mt-1 text-base font-semibold ${
+                  className={`amount-text mt-1 text-base font-semibold ${
                     selectedSummary?.change == null
                       ? "text-slate-900"
                       : selectedSummary.change >= 0

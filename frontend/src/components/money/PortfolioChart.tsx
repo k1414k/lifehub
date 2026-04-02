@@ -93,7 +93,7 @@ export default function PortfolioChart({
                 tick={{ fontSize: 11, fill: "#94a3b8" }}
                 tickLine={false}
                 axisLine={false}
-                width={88}
+                width={96}
                 tickFormatter={(value: number) => formatCompactCurrency(value)}
               />
               <Tooltip

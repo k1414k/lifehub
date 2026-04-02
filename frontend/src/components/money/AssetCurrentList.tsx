@@ -96,14 +96,14 @@ export default function AssetCurrentList({
                 <div className="mt-4 grid grid-cols-3 gap-3">
                   <div>
                     <p className="text-[11px] font-medium text-slate-400">現在値</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                    <p className="amount-text mt-1 text-sm font-semibold text-slate-900">
                       {item.currentValue == null ? "未記録" : formatCurrency(item.currentValue)}
                     </p>
                   </div>
                   <div>
                     <p className="text-[11px] font-medium text-slate-400">前回比</p>
                     <p
-                      className={`mt-1 text-sm font-semibold ${
+                      className={`amount-text mt-1 text-sm font-semibold ${
                         item.change == null
                           ? "text-slate-500"
                           : item.change >= 0

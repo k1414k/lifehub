@@ -44,12 +44,12 @@ export function amountToNumber(value: number | string | null | undefined) {
 }
 
 export function formatCurrency(value: number) {
-  return `¥${Math.round(value).toLocaleString("ja-JP")}`;
+  return `${Math.round(value).toLocaleString("ja-JP")}円`;
 }
 
 export function formatSignedCurrency(value: number | null) {
   if (value == null) return "初回記録";
-  if (value === 0) return "±¥0";
+  if (value === 0) return "±0円";
 
   const prefix = value > 0 ? "+" : "-";
   return `${prefix}${formatCurrency(Math.abs(value))}`;
@@ -59,11 +59,11 @@ export function formatCompactCurrency(value: number) {
   const abs = Math.abs(value);
 
   if (abs >= 100_000_000) {
-    return `¥${(value / 100_000_000).toFixed(abs >= 1_000_000_000 ? 0 : 1)}億`;
+    return `${(value / 100_000_000).toFixed(abs >= 1_000_000_000 ? 0 : 1)}億円`;
   }
 
   if (abs >= 10_000) {
-    return `¥${(value / 10_000).toFixed(abs >= 1_000_000 ? 0 : 1)}万`;
+    return `${(value / 10_000).toFixed(abs >= 1_000_000 ? 0 : 1)}万円`;
   }
 
   return formatCurrency(value);
