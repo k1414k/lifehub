@@ -1,29 +1,99 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import type { Transaction, TransactionForm, Memo, MemoForm, FileItem } from "@/types";
+import type {
+  AssetItem,
+  AssetForm,
+  AssetSnapshot,
+  AssetSnapshotForm,
+  AssetSnapshotBatchForm,
+  Memo,
+  MemoForm,
+  FileItem,
+} from "@/types";
 
-// ─── Transactions ──────────────────────────────────────────────
-export function useTransactions() {
-  return useQuery<Transaction[]>({
-    queryKey: ["transactions"],
-    queryFn: () => api.get("/transactions").then((r) => r.data),
+function invalidateAssetQueries(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ["assets"] });
+  qc.invalidateQueries({ queryKey: ["asset_snapshots"] });
+}
+
+// ─── Assets ────────────────────────────────────────────────────
+export function useAssets() {
+  return useQuery<AssetItem[]>({
+    queryKey: ["assets"],
+    queryFn: () => api.get("/assets").then((r) => r.data),
   });
 }
 
-export function useCreateTransaction() {
+export function useCreateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: TransactionForm) =>
-      api.post("/transactions", { transaction: data }).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["transactions"] }),
+    mutationFn: (data: AssetForm) =>
+      api.post("/assets", { asset: data }).then((r) => r.data),
+    onSuccess: () => invalidateAssetQueries(qc),
   });
 }
 
-export function useDeleteTransaction() {
+export function useUpdateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/transactions/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["transactions"] }),
+    mutationFn: ({ id, data }: { id: number; data: AssetForm }) =>
+      api.put(`/assets/${id}`, { asset: data }).then((r) => r.data),
+    onSuccess: () => invalidateAssetQueries(qc),
+  });
+}
+
+export function useDeleteAsset() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/assets/${id}`),
+    onSuccess: () => invalidateAssetQueries(qc),
+  });
+}
+
+export function useAssetSnapshots(assetItemId?: number) {
+  return useQuery<AssetSnapshot[]>({
+    queryKey: ["asset_snapshots", assetItemId ?? "all"],
+    queryFn: () =>
+      api
+        .get("/asset_snapshots", {
+          params: assetItemId ? { asset_item_id: assetItemId } : {},
+        })
+        .then((r) => r.data),
+  });
+}
+
+export function useCreateAssetSnapshot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: AssetSnapshotForm) =>
+      api.post("/asset_snapshots", { asset_snapshot: data }).then((r) => r.data),
+    onSuccess: () => invalidateAssetQueries(qc),
+  });
+}
+
+export function useCreateAssetSnapshotBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: AssetSnapshotBatchForm) =>
+      api.post("/asset_snapshots/bulk_create", { asset_snapshot_batch: data }).then((r) => r.data),
+    onSuccess: () => invalidateAssetQueries(qc),
+  });
+}
+
+export function useUpdateAssetSnapshot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<AssetSnapshotForm> }) =>
+      api.put(`/asset_snapshots/${id}`, { asset_snapshot: data }).then((r) => r.data),
+    onSuccess: () => invalidateAssetQueries(qc),
+  });
+}
+
+export function useDeleteAssetSnapshot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/asset_snapshots/${id}`),
+    onSuccess: () => invalidateAssetQueries(qc),
   });
 }
 

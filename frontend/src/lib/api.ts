@@ -45,4 +45,12 @@ api.interceptors.response.use(
   }
 );
 
+export function getApiErrorMessage(error: unknown, fallback = "保存に失敗しました") {
+  if (axios.isAxiosError(error)) {
+    return error.response?.data?.error ?? fallback;
+  }
+
+  return fallback;
+}
+
 export default api;

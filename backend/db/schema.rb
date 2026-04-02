@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_01_01_000005) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_01_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -40,6 +40,28 @@ ActiveRecord::Schema[7.2].define(version: 2024_01_01_000005) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "asset_items", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name", null: false
+    t.text "description", default: "", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "name"], name: "index_asset_items_on_user_id_and_name", unique: true
+    t.index ["user_id"], name: "index_asset_items_on_user_id"
+  end
+
+  create_table "asset_snapshots", force: :cascade do |t|
+    t.bigint "asset_item_id", null: false
+    t.decimal "amount", precision: 14, scale: 2, null: false
+    t.date "recorded_on", null: false
+    t.text "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["asset_item_id", "recorded_on"], name: "index_asset_snapshots_on_asset_item_id_and_recorded_on", unique: true
+    t.index ["asset_item_id"], name: "index_asset_snapshots_on_asset_item_id"
+    t.index ["recorded_on"], name: "index_asset_snapshots_on_recorded_on"
   end
 
   create_table "memos", force: :cascade do |t|
@@ -96,6 +118,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_01_01_000005) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "asset_items", "users"
+  add_foreign_key "asset_snapshots", "asset_items"
   add_foreign_key "memos", "users"
   add_foreign_key "transactions", "users"
   add_foreign_key "user_files", "users"

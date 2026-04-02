@@ -39,11 +39,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-muted p-4">
+    <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4 py-8 sm:p-6">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <span className="font-display font-bold text-3xl text-brand-600">LifeHub</span>
-          <p className="text-slate-500 text-sm mt-2">アカウントを作成</p>
+        <div className="mb-6 text-center sm:mb-8">
+          <span className="font-display text-3xl font-bold text-brand-600">LifeHub</span>
+          <p className="mt-2 text-sm text-slate-500">アカウントを作成</p>
         </div>
         <div className="card">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

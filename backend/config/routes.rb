@@ -13,7 +13,15 @@ Rails.application.routes.draw do
       # User info
       get  "me", to: "users#me"
 
-      # Money
+      # Assets
+      resources :assets, only: %i[index create update destroy]
+      resources :asset_snapshots, only: %i[index create update destroy] do
+        collection do
+          post :bulk_create
+        end
+      end
+
+      # Legacy money
       resources :transactions, only: %i[index create update destroy]
 
       # Memos

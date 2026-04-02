@@ -5,6 +5,8 @@ class User < ApplicationRecord
          :recoverable, :validatable,
          :jwt_authenticatable, jwt_revocation_strategy: self
 
+  has_many :asset_items,   dependent: :destroy
+  has_many :asset_snapshots, through: :asset_items
   has_many :transactions, dependent: :destroy
   has_many :memos,        dependent: :destroy
   has_many :user_files,   dependent: :destroy

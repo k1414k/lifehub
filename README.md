@@ -1,6 +1,6 @@
 # LifeHub — 生活管理ツール
 
-お金管理・メモ・ファイル管理を一つにまとめたパーソナルダッシュボード。
+資産管理・メモ・ファイル管理を一つにまとめたパーソナルダッシュボード。
 
 ## 技術スタック
 
@@ -90,12 +90,12 @@ project/
 │   │   ├── app/
 │   │   │   ├── auth/           # ログイン・登録ページ
 │   │   │   ├── dashboard/      # ダッシュボード
-│   │   │   ├── money/          # お金管理
+│   │   │   ├── money/          # 資産管理
 │   │   │   ├── memos/          # メモ
 │   │   │   └── files/          # ファイル管理
 │   │   ├── components/
 │   │   │   ├── layout/         # Sidebar, Header
-│   │   │   ├── money/          # 収支コンポーネント
+│   │   │   ├── money/          # 資産コンポーネント
 │   │   │   ├── memos/          # メモコンポーネント
 │   │   │   └── files/          # ファイルコンポーネント
 │   │   ├── lib/api.ts          # Axios クライアント
@@ -108,12 +108,14 @@ project/
     │   ├── controllers/
     │   │   └── api/v1/
     │   │       ├── auth/       # Devise セッション・登録
-    │   │       ├── transactions_controller.rb
+    │   │       ├── assets_controller.rb
+    │   │       ├── asset_snapshots_controller.rb
     │   │       ├── memos_controller.rb
     │   │       └── files_controller.rb
     │   └── models/
     │       ├── user.rb
-    │       ├── transaction.rb
+    │       ├── asset_item.rb
+    │       ├── asset_snapshot.rb
     │       ├── memo.rb
     │       └── user_file.rb
     ├── config/
@@ -137,13 +139,18 @@ project/
 | DELETE | `/api/v1/auth/sign_out` | ログアウト |
 | GET | `/api/v1/me` | 自分の情報取得 |
 
-### お金管理
+### 資産管理
 | Method | Path | 説明 |
 |---|---|---|
-| GET | `/api/v1/transactions` | 一覧取得 |
-| POST | `/api/v1/transactions` | 作成 |
-| PUT | `/api/v1/transactions/:id` | 更新 |
-| DELETE | `/api/v1/transactions/:id` | 削除 |
+| GET | `/api/v1/assets` | 資産項目一覧取得 |
+| POST | `/api/v1/assets` | 資産項目作成 |
+| PUT | `/api/v1/assets/:id` | 資産項目更新 |
+| DELETE | `/api/v1/assets/:id` | 資産項目削除 |
+| GET | `/api/v1/asset_snapshots` | 資産記録一覧取得 |
+| POST | `/api/v1/asset_snapshots` | 単一資産記録作成・同日上書き |
+| PUT | `/api/v1/asset_snapshots/:id` | 資産記録更新 |
+| DELETE | `/api/v1/asset_snapshots/:id` | 資産記録削除 |
+| POST | `/api/v1/asset_snapshots/bulk_create` | 複数資産を同日一括記録 |
 
 ### メモ
 | Method | Path | 説明 |
