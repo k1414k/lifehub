@@ -85,11 +85,11 @@ export default function DashboardPage() {
         <div className="lg:col-span-3">
           <PortfolioChart
             title="総資産推移"
-            subtitle="表示期間内の最新評価額を引き継いだステップラインで表示します"
+            subtitle="表示期間内の総資産推移を折れ線チャートで表示します"
             points={chartPoints}
             range={chartRange}
             onRangeChange={setChartRange}
-            color="#0f766e"
+            color="#2563eb"
             emptyMessage="資産記録が入るとここに総資産チャートが表示されます"
           />
         </div>

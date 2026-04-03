@@ -1,10 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -36,11 +37,13 @@ export default function PortfolioChart({
   points,
   range,
   onRangeChange,
-  color = "#0f766e",
+  color = "#2563eb",
   emptyMessage,
   controls,
 }: Props) {
   const hasValues = points.some((point) => point.value != null);
+  const gradientId = useId().replace(/:/g, "");
+  const showDots = points.filter((point) => point.value != null).length <= 12;
 
   return (
     <div className="card">
@@ -77,7 +80,13 @@ export default function PortfolioChart({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={points} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+            <ComposedChart data={points} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+              <defs>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0.03} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis
                 dataKey="timestamp"
@@ -109,17 +118,29 @@ export default function PortfolioChart({
                   fontSize: 12,
                 }}
               />
+              <Area
+                type="linear"
+                dataKey="value"
+                stroke="none"
+                fill={`url(#${gradientId})`}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
               <Line
-                type="stepAfter"
+                type="linear"
                 dataKey="value"
                 stroke={color}
                 strokeWidth={3}
-                dot={false}
+                dot={
+                  showDots
+                    ? { r: 2.5, fill: color, stroke: "#fff", strokeWidth: 1.5 }
+                    : false
+                }
                 connectNulls={false}
                 activeDot={{ r: 4, fill: color, stroke: "#fff", strokeWidth: 2 }}
                 isAnimationActive={false}
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         )}
       </div>
