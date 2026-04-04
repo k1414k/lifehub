@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Syne } from "next/font/google";
+import { Suspense } from "react";
+import AuthProvider from "@/components/auth/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
 import "./globals.css";
 
@@ -32,8 +34,18 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} font-sans`}>
-          <QueryProvider>{children}</QueryProvider>
-        </body>
+        <QueryProvider>
+          <Suspense
+            fallback={
+              <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4 text-sm text-slate-500">
+                読み込み中...
+              </div>
+            }
+          >
+            <AuthProvider>{children}</AuthProvider>
+          </Suspense>
+        </QueryProvider>
+      </body>
     </html>
   );
 }

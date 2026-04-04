@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-const PUBLIC_PATHS = ["/auth/login", "/auth/register"];
+import { AUTH_SESSION_COOKIE_NAME, buildLoginRedirectPath, isPublicAuthPath } from "@/lib/auth";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // パブリックパスはそのまま通す
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  if (isPublicAuthPath(pathname)) {
     return NextResponse.next();
   }
 
-  // トークンチェック（クッキーベース。LocalStorageはSSRで読めないためスキップ可能）
-  // 本番では HttpOnly Cookie + サーバーサイド検証を推奨
+  const hasAuthSession = request.cookies.get(AUTH_SESSION_COOKIE_NAME)?.value === "1";
+
+  if (!hasAuthSession) {
+    return NextResponse.redirect(
+      new URL(buildLoginRedirectPath(pathname, request.nextUrl.search), request.url)
+    );
+  }
+
   return NextResponse.next();
 }
 

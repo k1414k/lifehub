@@ -10,4 +10,7 @@ Rails.application.configure do
   config.active_storage.service = :amazon
   config.active_support.report_deprecations = false
   config.active_record.dump_schema_after_migration = false
+
+  rails_host = ENV["RAILS_HOST"]
+  config.hosts << rails_host if rails_host.present?
 end

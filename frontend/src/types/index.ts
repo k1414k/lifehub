@@ -6,6 +6,12 @@ export interface User {
   created_at: string;
 }
 
+export interface AuthResponse {
+  message: string;
+  data: User;
+  errors?: string[];
+}
+
 // ========== Assets ==========
 export interface AssetItem {
   id: number;
@@ -71,12 +77,16 @@ export interface TransactionForm {
 }
 
 // ========== Memos ==========
+export type MemoType = "normal" | "deadline";
+
 export interface Memo {
   id: number;
   title: string;
   content: string;
   tags: string[];
   pinned: boolean;
+  memo_type: MemoType;
+  deadline_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -86,6 +96,8 @@ export interface MemoForm {
   content: string;
   tags: string[];
   pinned: boolean;
+  memo_type: MemoType;
+  deadline_at?: string | null;
 }
 
 // ========== Files ==========

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Boxes, FolderOpen, StickyNote, Wallet, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -16,6 +16,7 @@ import {
   sortSnapshotsRecentFirst,
   type AssetChartRange,
 } from "@/lib/assets";
+import { formatDeadlineDateTime, getDeadlineStatus, isDeadlineMemo, sortDeadlineMemos } from "@/lib/memos";
 
 export default function DashboardPage() {
   const { data: assets = [] } = useAssets();
@@ -23,7 +24,16 @@ export default function DashboardPage() {
   const { data: memos = [] } = useMemos();
   const { data: files = [] } = useFiles();
   const [chartRange, setChartRange] = useState<AssetChartRange>("3M");
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   const portfolioSummary = useMemo(
     () => buildPortfolioSummary(assets, snapshots),
     [assets, snapshots]
@@ -40,7 +50,10 @@ export default function DashboardPage() {
     () => new Map(assets.map((asset) => [asset.id, asset.name])),
     [assets]
   );
-  const pinnedMemos = memos.filter((m) => m.pinned).slice(0, 3);
+  const upcomingDeadlineMemos = useMemo(
+    () => sortDeadlineMemos(memos.filter(isDeadlineMemo)).slice(0, 3),
+    [memos]
+  );
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -121,19 +134,27 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {pinnedMemos.length > 0 && (
+      {upcomingDeadlineMemos.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-slate-800">ピン留めメモ</h2>
+            <h2 className="font-semibold text-slate-800">締切が近いメモ</h2>
             <Link href="/memos" className="text-xs text-brand-600 hover:underline flex items-center gap-1">すべて <ArrowRight size={12} /></Link>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {pinnedMemos.map((m) => (
-              <Link key={m.id} href="/memos" className="card hover:shadow-card-hover transition-shadow block">
-                <p className="text-sm font-semibold text-slate-800 truncate">{m.title}</p>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-2">{m.content || "内容なし"}</p>
-              </Link>
-            ))}
+            {upcomingDeadlineMemos.map((m) => {
+              const status = getDeadlineStatus(m.deadline_at!, now);
+
+              return (
+                <Link key={m.id} href="/memos" className="card hover:shadow-card-hover transition-shadow block">
+                  <p className={`text-xs font-semibold ${status.expired ? "text-purple-500" : "text-red-600"}`}>
+                    {status.label}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-800 truncate">{m.title}</p>
+                  <p className="mt-1 text-xs text-slate-500">締切: {formatDeadlineDateTime(m.deadline_at!)}</p>
+                  <p className="text-xs text-slate-500 mt-2 line-clamp-2">{m.content || "内容なし"}</p>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

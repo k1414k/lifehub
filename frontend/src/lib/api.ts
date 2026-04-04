@@ -1,25 +1,22 @@
 import axios from "axios";
+import type { InternalAxiosRequestConfig } from "axios";
+import { buildLoginRedirectPath, isPublicAuthPath } from "@/lib/auth";
+import { useAuthStore } from "@/stores/authStore";
+
+declare module "axios" {
+  interface AxiosRequestConfig<D = any> {
+    skipAuthRedirect?: boolean;
+  }
+
+  interface InternalAxiosRequestConfig<D = any> {
+    skipAuthRedirect?: boolean;
+  }
+}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1`
   : "/api/v1";
-
-function getStoredToken() {
-  if (typeof window === "undefined") return null;
-
-  const directToken = localStorage.getItem("token");
-  if (directToken) return directToken;
-
-  const authStorage = localStorage.getItem("auth-storage");
-  if (!authStorage) return null;
-
-  try {
-    const parsed = JSON.parse(authStorage) as { state?: { token?: string | null } };
-    return parsed.state?.token ?? null;
-  } catch {
-    return null;
-  }
-}
+let isRedirectingForUnauthorized = false;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,7 +26,7 @@ const api = axios.create({
 
 // リクエストインターセプター（JWT トークンをヘッダーに付加）
 api.interceptors.request.use((config) => {
-  const token = getStoredToken();
+  const token = useAuthStore.getState().token;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -38,16 +35,46 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== "undefined") {
-      window.location.href = "/auth/login";
+    const config = error.config as InternalAxiosRequestConfig | undefined;
+
+    if (
+      error.response?.status === 401 &&
+      typeof window !== "undefined" &&
+      !config?.skipAuthRedirect
+    ) {
+      useAuthStore.getState().clearSession();
+
+      if (!isPublicAuthPath(window.location.pathname) && !isRedirectingForUnauthorized) {
+        isRedirectingForUnauthorized = true;
+        window.location.assign(
+          buildLoginRedirectPath(window.location.pathname, window.location.search)
+        );
+      }
     }
+
     return Promise.reject(error);
   }
 );
 
 export function getApiErrorMessage(error: unknown, fallback = "保存に失敗しました") {
   if (axios.isAxiosError(error)) {
-    return error.response?.data?.error ?? fallback;
+    const data = error.response?.data;
+
+    if (typeof data?.error === "string") {
+      return data.error;
+    }
+
+    if (Array.isArray(data?.errors) && data.errors.length > 0) {
+      return data.errors.join(", ");
+    }
+
+    if (typeof data?.message === "string") {
+      return data.message;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
 
   return fallback;

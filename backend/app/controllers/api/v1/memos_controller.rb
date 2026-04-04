@@ -44,7 +44,7 @@ module Api
       end
 
       def memo_params
-        params.require(:memo).permit(:title, :content, :pinned, tags: [])
+        params.require(:memo).permit(:title, :content, :pinned, :memo_type, :deadline_at, tags: [])
       end
     end
   end

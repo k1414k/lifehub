@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_01_120000) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_03_191705) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -72,7 +72,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_01_120000) do
     t.boolean "pinned", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "memo_type", default: "normal", null: false
+    t.datetime "deadline_at"
+    t.index ["deadline_at"], name: "index_memos_on_deadline_at"
+    t.index ["memo_type"], name: "index_memos_on_memo_type"
     t.index ["pinned"], name: "index_memos_on_pinned"
+    t.index ["user_id", "memo_type", "deadline_at"], name: "index_memos_on_user_id_and_memo_type_and_deadline_at"
     t.index ["user_id", "updated_at"], name: "index_memos_on_user_id_and_updated_at"
     t.index ["user_id"], name: "index_memos_on_user_id"
   end
