@@ -3,10 +3,12 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import api from "@/lib/api";
+import api, { getApiErrorMessage } from "@/lib/api";
+import { extractBearerToken, getPostAuthRedirectPath } from "@/lib/auth";
 import { useAuthStore } from "@/stores/authStore";
+import type { AuthResponse } from "@/types";
 
 const schema = z.object({
   name: z.string().min(1, "名前は必須です"),
@@ -21,20 +23,34 @@ type Form = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const setUser = useAuthStore((s) => s.setUser);
+  const searchParams = useSearchParams();
+  const setSession = useAuthStore((s) => s.setSession);
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: Form) => {
     try {
-      const r = await api.post("/auth", { user: data });
-      const token = r.headers["authorization"]?.replace("Bearer ", "");
-      setUser(r.data.data, token);
-      if (token) localStorage.setItem("token", token);
-      router.push("/dashboard");
-    } catch {
-      setError("root", { message: "登録に失敗しました。既に使用されているメールアドレスかもしれません。" });
+      const r = await api.post<AuthResponse>(
+        "/auth",
+        { user: data },
+        { skipAuthRedirect: true }
+      );
+      const token = extractBearerToken(r.headers["authorization"]);
+
+      if (!token) {
+        throw new Error("認証トークンを取得できませんでした");
+      }
+
+      setSession(r.data.data, token);
+      router.replace(getPostAuthRedirectPath(searchParams.get("next")));
+    } catch (error) {
+      setError("root", {
+        message: getApiErrorMessage(
+          error,
+          "登録に失敗しました。既に使用されているメールアドレスかもしれません。"
+        ),
+      });
     }
   };
 

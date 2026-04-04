@@ -161,6 +161,13 @@ project/
 | PUT | `/api/v1/memos/:id` | 更新 |
 | DELETE | `/api/v1/memos/:id` | 削除 |
 
+- `memo_type`
+  - `normal`: 通常メモ
+  - `deadline`: 締切付きメモ
+- `deadline_at`
+  - `memo_type=deadline` のときのみ必須の締切日時
+  - 既存メモは `memo_type=normal` / `deadline_at=null` として扱われます
+
 ### ファイル
 | Method | Path | 説明 |
 |---|---|---|

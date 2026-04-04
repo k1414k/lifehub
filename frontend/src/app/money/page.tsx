@@ -186,7 +186,7 @@ export default function MoneyPage() {
           points={totalChartPoints}
           range={totalRange}
           onRangeChange={setTotalRange}
-          color="#0f766e"
+          color="#2563eb"
           emptyMessage="資産記録が入ると総資産チャートが表示されます"
         />
 
@@ -195,7 +195,7 @@ export default function MoneyPage() {
             title="資産項目別チャート"
             subtitle={
               selectedSummary
-                ? `${selectedSummary.asset.name} の推移をステップラインで表示しています`
+                ? `${selectedSummary.asset.name} の推移を折れ線チャートで表示しています`
                 : "表示する資産項目を選択してください"
             }
             points={assetChartPoints}

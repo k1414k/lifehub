@@ -6,14 +6,19 @@ module Api
 
         private
 
+        def sign_up(resource_name, resource)
+          sign_in(resource_name, resource, store: false)
+        end
+
         def respond_with(resource, _opts = {})
           if resource.persisted?
             render json: {
               message: "アカウントを作成しました",
               data: {
-                id:    resource.id,
-                email: resource.email,
-                name:  resource.name,
+                id:         resource.id,
+                email:      resource.email,
+                name:       resource.name,
+                created_at: resource.created_at,
               },
             }, status: :created
           else
