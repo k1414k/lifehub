@@ -36,4 +36,6 @@ RUN npm install
 COPY . .
 
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+
+# デフォルトは本番起動に寄せる。ローカル開発は docker-compose の command 上書きで `npm run dev` を使う。
+CMD ["sh", "-c", "npm run build && npm run start"]
