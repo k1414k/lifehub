@@ -51,6 +51,10 @@ export default function MoneyPage() {
     () => new Map(assets.map((asset) => [asset.id, asset])),
     [assets]
   );
+  const assetNamesById = useMemo(
+    () => new Map(assets.map((asset) => [asset.id, asset.name])),
+    [assets]
+  );
   const recentSnapshots = useMemo(
     () => sortSnapshotsRecentFirst(snapshots),
     [snapshots]
@@ -73,12 +77,12 @@ export default function MoneyPage() {
     [selectedAssetId, snapshots]
   );
   const totalChartPoints = useMemo(
-    () => buildTotalChartPoints(snapshots, totalRange),
-    [snapshots, totalRange]
+    () => buildTotalChartPoints(snapshots, totalRange, assetNamesById),
+    [assetNamesById, snapshots, totalRange]
   );
   const assetChartPoints = useMemo(
-    () => buildAssetChartPoints(selectedAssetSnapshots, assetRange),
-    [assetRange, selectedAssetSnapshots]
+    () => buildAssetChartPoints(selectedAssetSnapshots, assetRange, selectedSummary?.asset.name),
+    [assetRange, selectedAssetSnapshots, selectedSummary?.asset.name]
   );
 
   const handleEditAsset = (asset: AssetItem) => {

@@ -1,7 +1,14 @@
 "use client";
 
+import { useMemo } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import { formatCurrency, formatDateTime, formatRecordedOn } from "@/lib/assets";
+import {
+  buildSnapshotChangeMap,
+  formatCurrency,
+  formatDateTime,
+  formatRecordedOn,
+  formatSignedCurrency,
+} from "@/lib/assets";
 import type { AssetItem, AssetSnapshot } from "@/types";
 
 interface Props {
@@ -17,6 +24,8 @@ export default function AssetSnapshotHistory({
   onEdit,
   onDelete,
 }: Props) {
+  const changeMap = useMemo(() => buildSnapshotChangeMap(snapshots), [snapshots]);
+
   return (
     <div className="card p-0 overflow-hidden">
       <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
@@ -32,6 +41,17 @@ export default function AssetSnapshotHistory({
         <ul className="max-h-[520px] divide-y divide-slate-100 overflow-y-auto">
           {snapshots.map((snapshot) => {
             const assetName = assetsById.get(snapshot.asset_item_id)?.name ?? "削除済みの資産";
+            const change = changeMap.get(snapshot.id) ?? null;
+            const changeText =
+              change == null ? "—" : change === 0 ? "0円" : formatSignedCurrency(change);
+            const changeClass =
+              change == null
+                ? "text-slate-400"
+                : change > 0
+                  ? "text-emerald-600"
+                  : change < 0
+                    ? "text-red-500"
+                    : "text-slate-500";
 
             return (
               <li
@@ -45,7 +65,7 @@ export default function AssetSnapshotHistory({
                       {formatRecordedOn(snapshot.recorded_on)}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-500">
                     {snapshot.note?.trim() ? snapshot.note : "メモなし"}
                   </p>
                   <p className="mt-2 text-xs text-slate-400">
@@ -53,10 +73,15 @@ export default function AssetSnapshotHistory({
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between gap-3 sm:justify-end">
-                  <p className="amount-text text-sm font-semibold text-slate-900">
-                    {formatCurrency(Number(snapshot.amount))}
-                  </p>
+                <div className="flex items-center justify-between gap-3 sm:min-w-44 sm:justify-end">
+                  <div className="text-right">
+                    <p className="amount-text text-sm font-semibold text-slate-900">
+                      {formatCurrency(Number(snapshot.amount))}
+                    </p>
+                    <p className={`mt-1 text-xs font-medium ${changeClass}`}>
+                      前回比 {changeText}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"

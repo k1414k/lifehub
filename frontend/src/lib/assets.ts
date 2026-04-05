@@ -1,6 +1,7 @@
 import {
   endOfDay,
   format,
+  isSameDay,
   parseISO,
   startOfDay,
   subDays,
@@ -18,6 +19,16 @@ export interface AssetChartPoint {
   timestamp: number;
   value: number | null;
   label: string;
+  events?: AssetChartEvent[];
+}
+
+export interface AssetChartEvent {
+  snapshotId: number;
+  assetItemId: number;
+  assetName?: string;
+  amount: number;
+  note: string | null;
+  recordedOn: string;
 }
 
 export interface AssetItemSummary {
@@ -81,6 +92,10 @@ export function formatChartDate(timestamp: number) {
   return format(new Date(timestamp), "M/d", { locale: ja });
 }
 
+export function formatChartTooltipDate(timestamp: number) {
+  return format(new Date(timestamp), "yyyy/MM/dd", { locale: ja });
+}
+
 function snapshotTimestamp(snapshot: AssetSnapshot) {
   return startOfDay(parseISO(snapshot.recorded_on)).getTime();
 }
@@ -113,6 +128,32 @@ export function groupSnapshotsByAsset(snapshots: AssetSnapshot[]) {
   return grouped;
 }
 
+export function calculateSnapshotChange(
+  currentAmount: number | string | null | undefined,
+  previousAmount: number | string | null | undefined
+) {
+  if (currentAmount == null || previousAmount == null) return null;
+
+  return amountToNumber(currentAmount) - amountToNumber(previousAmount);
+}
+
+export function buildSnapshotChangeMap(snapshots: AssetSnapshot[]) {
+  const changeMap = new Map<number, number | null>();
+
+  for (const itemSnapshots of groupSnapshotsByAsset(snapshots).values()) {
+    itemSnapshots.forEach((snapshot, index) => {
+      const previousSnapshot = itemSnapshots[index - 1] ?? null;
+
+      changeMap.set(
+        snapshot.id,
+        calculateSnapshotChange(snapshot.amount, previousSnapshot?.amount)
+      );
+    });
+  }
+
+  return changeMap;
+}
+
 function getRangeStart(range: AssetChartRange, end: Date, earliest: AssetSnapshot | null) {
   if (range === "ALL") {
     return earliest ? startOfDay(parseISO(earliest.recorded_on)) : startOfDay(end);
@@ -129,14 +170,20 @@ function getRangeStart(range: AssetChartRange, end: Date, earliest: AssetSnapsho
 function getRangeBounds(range: AssetChartRange, snapshots: AssetSnapshot[]) {
   const sorted = sortSnapshotsChronologically(snapshots);
   const earliest = sorted[0] ?? null;
-  const end = endOfDay(new Date());
+  const latest = sorted.at(-1) ?? null;
+  const end = latest ? endOfDay(parseISO(latest.recorded_on)) : endOfDay(new Date());
   const start = getRangeStart(range, end, earliest);
 
   return { start, end };
 }
 
-function pushPoint(points: AssetChartPoint[], timestamp: number, value: number | null) {
-  const point = { timestamp, value, label: formatChartDate(timestamp) };
+function pushPoint(
+  points: AssetChartPoint[],
+  timestamp: number,
+  value: number | null,
+  events?: AssetChartEvent[]
+) {
+  const point = { timestamp, value, label: formatChartDate(timestamp), events };
   const lastPoint = points.at(-1);
 
   if (lastPoint && lastPoint.timestamp === timestamp) {
@@ -160,6 +207,47 @@ function findLatestSnapshotAtOrBefore(snapshots: AssetSnapshot[], targetTimestam
   }
 
   return latestSnapshot;
+}
+
+function normalizeSnapshotNote(note?: string | null) {
+  const trimmed = note?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function buildChartEventsByTimestamp(
+  snapshots: AssetSnapshot[],
+  getAssetName?: (snapshot: AssetSnapshot) => string | undefined
+) {
+  const eventMap = new Map<number, AssetChartEvent[]>();
+
+  for (const snapshot of snapshots) {
+    const timestamp = snapshotTimestamp(snapshot);
+    const events = eventMap.get(timestamp) ?? [];
+
+    events.push({
+      snapshotId: snapshot.id,
+      assetItemId: snapshot.asset_item_id,
+      assetName: getAssetName?.(snapshot),
+      amount: amountToNumber(snapshot.amount),
+      note: normalizeSnapshotNote(snapshot.note),
+      recordedOn: snapshot.recorded_on,
+    });
+
+    eventMap.set(timestamp, events);
+  }
+
+  return eventMap;
+}
+
+function getBoundaryEvents(
+  eventMap: Map<number, AssetChartEvent[]>,
+  snapshot: AssetSnapshot | null,
+  boundaryDate: Date
+) {
+  if (!snapshot) return undefined;
+  if (!isSameDay(parseISO(snapshot.recorded_on), boundaryDate)) return undefined;
+
+  return eventMap.get(snapshotTimestamp(snapshot));
 }
 
 function calculateTotalValueAt(groupedSnapshots: Map<number, AssetSnapshot[]>, targetTimestamp: number) {
@@ -196,10 +284,7 @@ export function buildAssetItemSummaries(assets: AssetItem[], snapshots: AssetSna
         previousSnapshot,
         currentValue,
         previousValue,
-        change:
-          currentValue != null && previousValue != null
-            ? currentValue - previousValue
-            : null,
+        change: calculateSnapshotChange(currentValue, previousValue),
       };
     });
 }
@@ -230,15 +315,18 @@ export function buildPortfolioSummary(assets: AssetItem[], snapshots: AssetSnaps
   return {
     totalValue: latestPoint?.value ?? null,
     previousTotalValue: previousPoint?.value ?? null,
-    change:
-      latestPoint && previousPoint ? latestPoint.value - previousPoint.value : null,
+    change: calculateSnapshotChange(latestPoint?.value, previousPoint?.value),
     lastUpdatedAt: latestUpdatedSnapshot?.updated_at ?? null,
     lastRecordedOn: latestUpdatedSnapshot?.recorded_on ?? null,
     assetCount: assets.length,
   };
 }
 
-export function buildAssetChartPoints(snapshots: AssetSnapshot[], range: AssetChartRange) {
+export function buildAssetChartPoints(
+  snapshots: AssetSnapshot[],
+  range: AssetChartRange,
+  assetName?: string
+) {
   const sorted = sortSnapshotsChronologically(snapshots);
 
   if (sorted.length === 0) return [];
@@ -246,6 +334,10 @@ export function buildAssetChartPoints(snapshots: AssetSnapshot[], range: AssetCh
   const { start, end } = getRangeBounds(range, sorted);
   const startTimestamp = start.getTime();
   const endTimestamp = end.getTime();
+  const eventMap = buildChartEventsByTimestamp(
+    sorted,
+    assetName ? () => assetName : undefined
+  );
   const beforeStart = findLatestSnapshotAtOrBefore(sorted, startTimestamp);
   const inRange = sorted.filter((snapshot) => {
     const timestamp = snapshotTimestamp(snapshot);
@@ -260,19 +352,33 @@ export function buildAssetChartPoints(snapshots: AssetSnapshot[], range: AssetCh
   }
 
   for (const snapshot of inRange) {
-    pushPoint(points, snapshotTimestamp(snapshot), amountToNumber(snapshot.amount));
+    pushPoint(
+      points,
+      snapshotTimestamp(snapshot),
+      amountToNumber(snapshot.amount),
+      eventMap.get(snapshotTimestamp(snapshot))
+    );
   }
 
   const lastKnownSnapshot = inRange.at(-1) ?? beforeStart;
 
   if (lastKnownSnapshot && snapshotTimestamp(lastKnownSnapshot) < endTimestamp) {
-    pushPoint(points, endTimestamp, amountToNumber(lastKnownSnapshot.amount));
+    pushPoint(
+      points,
+      endTimestamp,
+      amountToNumber(lastKnownSnapshot.amount),
+      getBoundaryEvents(eventMap, lastKnownSnapshot, end)
+    );
   }
 
   return points;
 }
 
-export function buildTotalChartPoints(snapshots: AssetSnapshot[], range: AssetChartRange) {
+export function buildTotalChartPoints(
+  snapshots: AssetSnapshot[],
+  range: AssetChartRange,
+  assetNamesById?: Map<number, string>
+) {
   const sorted = sortSnapshotsChronologically(snapshots);
 
   if (sorted.length === 0) return [];
@@ -281,6 +387,10 @@ export function buildTotalChartPoints(snapshots: AssetSnapshot[], range: AssetCh
   const startTimestamp = start.getTime();
   const endTimestamp = end.getTime();
   const groupedSnapshots = groupSnapshotsByAsset(sorted);
+  const eventMap = buildChartEventsByTimestamp(
+    sorted,
+    assetNamesById ? (snapshot) => assetNamesById.get(snapshot.asset_item_id) : undefined
+  );
   const timestampsInRange = [
     ...new Set(
       sorted
@@ -298,13 +408,23 @@ export function buildTotalChartPoints(snapshots: AssetSnapshot[], range: AssetCh
   }
 
   for (const timestamp of timestampsInRange) {
-    pushPoint(points, timestamp, calculateTotalValueAt(groupedSnapshots, timestamp));
+    pushPoint(
+      points,
+      timestamp,
+      calculateTotalValueAt(groupedSnapshots, timestamp),
+      eventMap.get(timestamp)
+    );
   }
 
   const endValue = calculateTotalValueAt(groupedSnapshots, endTimestamp);
 
   if (endValue != null) {
-    pushPoint(points, endTimestamp, endValue);
+    pushPoint(
+      points,
+      endTimestamp,
+      endValue,
+      getBoundaryEvents(eventMap, sorted.at(-1) ?? null, end)
+    );
   }
 
   return points;

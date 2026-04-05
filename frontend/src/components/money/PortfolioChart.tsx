@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useId } from "react";
+import type { CSSProperties } from "react";
 import {
   Area,
   CartesianGrid,
@@ -16,6 +17,7 @@ import {
   type AssetChartPoint,
   type AssetChartRange,
   formatChartDate,
+  formatChartTooltipDate,
   formatCompactCurrency,
   formatCurrency,
 } from "@/lib/assets";
@@ -29,6 +31,63 @@ interface Props {
   color?: string;
   emptyMessage: string;
   controls?: ReactNode;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  label?: number | string;
+  payload?: Array<{
+    value?: number | string | null;
+    payload?: AssetChartPoint;
+  }>;
+}
+
+function ChartTooltip({ active, label, payload, title }: TooltipProps & { title: string }) {
+  const point = payload?.[0]?.payload;
+
+  if (!active || !point) return null;
+
+  const rawValue = payload?.[0]?.value ?? point.value;
+  const numericValue = rawValue == null ? NaN : Number(rawValue);
+  const events = point.events ?? [];
+
+  return (
+    <div
+      className="rounded-xl border border-slate-200 bg-white/95 p-3 text-xs shadow-lg backdrop-blur"
+      style={
+        {
+          width: "min(20rem, calc(100vw - 2rem))",
+          maxHeight: "18rem",
+          overflowY: "auto",
+        } satisfies CSSProperties
+      }
+    >
+      <p className="font-medium text-slate-500">
+        {formatChartTooltipDate(Number(label ?? point.timestamp))}
+      </p>
+      <div className="mt-2">
+        <p className="text-[11px] text-slate-500">{title}</p>
+        <p className="amount-text mt-1 text-sm font-semibold text-slate-900">
+          {Number.isNaN(numericValue) ? "未記録" : formatCurrency(numericValue)}
+        </p>
+      </div>
+
+      {events.length > 0 && (
+        <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          {events.map((event) => (
+            <div key={event.snapshotId} className="space-y-1">
+              {event.assetName && (
+                <p className="text-[11px] font-semibold text-slate-600">{event.assetName}</p>
+              )}
+              <p className="whitespace-pre-wrap break-words text-[11px] leading-5 text-slate-600">
+                {event.note ?? "メモなし"}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function PortfolioChart({
@@ -106,17 +165,8 @@ export default function PortfolioChart({
                 tickFormatter={(value: number) => formatCompactCurrency(value)}
               />
               <Tooltip
-                labelFormatter={(value) => formatChartDate(Number(value))}
-                formatter={(value) => {
-                  const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
-
-                  return [Number.isNaN(numericValue) ? "未記録" : formatCurrency(numericValue), title];
-                }}
-                contentStyle={{
-                  borderRadius: 12,
-                  border: "1px solid #e2e8f0",
-                  fontSize: 12,
-                }}
+                content={<ChartTooltip title={title} />}
+                cursor={{ stroke: "#cbd5e1", strokeDasharray: "4 4" }}
               />
               <Area
                 type="linear"

@@ -38,17 +38,17 @@ export default function DashboardPage() {
     () => buildPortfolioSummary(assets, snapshots),
     [assets, snapshots]
   );
+  const assetNames = useMemo(
+    () => new Map(assets.map((asset) => [asset.id, asset.name])),
+    [assets]
+  );
   const chartPoints = useMemo(
-    () => buildTotalChartPoints(snapshots, chartRange),
-    [chartRange, snapshots]
+    () => buildTotalChartPoints(snapshots, chartRange, assetNames),
+    [assetNames, chartRange, snapshots]
   );
   const recentSnapshots = useMemo(
     () => sortSnapshotsRecentFirst(snapshots).slice(0, 5),
     [snapshots]
-  );
-  const assetNames = useMemo(
-    () => new Map(assets.map((asset) => [asset.id, asset.name])),
-    [assets]
   );
   const upcomingDeadlineMemos = useMemo(
     () => sortDeadlineMemos(memos.filter(isDeadlineMemo)).slice(0, 3),
