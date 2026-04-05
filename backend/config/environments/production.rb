@@ -1,4 +1,5 @@
 require "active_support/core_ext/integer/time"
+require "uri"
 
 Rails.application.configure do
   config.enable_reloading = false
@@ -11,6 +12,20 @@ Rails.application.configure do
   config.active_support.report_deprecations = false
   config.active_record.dump_schema_after_migration = false
 
-  rails_host = ENV["RAILS_HOST"]
-  config.hosts << rails_host if rails_host.present?
+  allowed_hosts = [ENV["RAILS_HOST"]]
+
+  frontend_hosts = ENV.fetch("FRONTEND_ORIGIN", "")
+    .split(",")
+    .map(&:strip)
+    .filter_map do |origin|
+      next if origin.blank?
+
+      URI.parse(origin).host
+    rescue URI::InvalidURIError
+      nil
+    end
+
+  (allowed_hosts + frontend_hosts).uniq.each do |host|
+    config.hosts << host if host.present?
+  end
 end

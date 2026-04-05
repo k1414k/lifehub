@@ -13,9 +13,22 @@ declare module "axios" {
   }
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1`
-  : "/api/v1";
+function buildApiBaseUrl() {
+  const configuredOrigin = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+
+  if (!configuredOrigin) {
+    return "/api/v1";
+  }
+
+  // `/api` と絶対 URL のどちらを渡しても `/api/v1` に正規化する。
+  if (configuredOrigin.endsWith("/api")) {
+    return `${configuredOrigin}/v1`;
+  }
+
+  return `${configuredOrigin}/api/v1`;
+}
+
+const API_BASE_URL = buildApiBaseUrl();
 let isRedirectingForUnauthorized = false;
 
 const api = axios.create({
