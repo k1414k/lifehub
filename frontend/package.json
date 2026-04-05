@@ -20,8 +20,7 @@
     "@hookform/resolvers": "^3.10.0",
     "lucide-react": "^0.474.0",
     "date-fns": "^4.1.0",
-    "recharts": "^2.15.0",
-    "next-auth": "^4.24.11"
+    "recharts": "^2.15.0"
   },
   "devDependencies": {
     "typescript": "^5",
