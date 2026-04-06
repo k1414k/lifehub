@@ -38,7 +38,7 @@ export default function AssetCurrentList({
           資産項目を追加すると、ここに現在値が表示されます
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => {
             const isSelected = item.asset.id === selectedAssetId;
 
@@ -54,7 +54,7 @@ export default function AssetCurrentList({
                 }}
                 role="button"
                 tabIndex={0}
-                className={`rounded-2xl border p-4 text-left transition-all ${
+                className={`h-full rounded-2xl border p-4 text-left transition-all ${
                   isSelected
                     ? "border-brand-300 bg-brand-50/40 shadow-sm"
                     : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
@@ -63,7 +63,7 @@ export default function AssetCurrentList({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-slate-900">{item.asset.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 break-words text-xs leading-5 text-slate-500">
                       {item.asset.description || "説明はまだ登録されていません"}
                     </p>
                   </div>

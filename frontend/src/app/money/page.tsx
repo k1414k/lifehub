@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Boxes, Clock3, Plus, Wallet } from "lucide-react";
+import { Plus } from "lucide-react";
 import AssetCurrentList from "@/components/money/AssetCurrentList";
 import AssetItemModal from "@/components/money/AssetItemModal";
 import AssetSnapshotForm from "@/components/money/AssetSnapshotForm";
@@ -14,30 +14,60 @@ import {
   useDeleteAssetSnapshot,
 } from "@/hooks/useApi";
 import {
+  buildAssetChartTargetKey,
   buildAssetChartPoints,
   buildAssetItemSummaries,
   buildPortfolioSummary,
   buildTotalChartPoints,
+  calculateAssetShare,
+  DEFAULT_ASSET_CHART_RANGE,
+  DEFAULT_ASSET_CHART_TARGET_KEY,
   formatCurrency,
   formatDateTime,
   formatRecordedOn,
+  formatSharePercentage,
   formatSignedCurrency,
+  parseAssetIdFromChartTargetKey,
   sortSnapshotsRecentFirst,
   type AssetChartRange,
+  type AssetChartTargetKey,
+  TOTAL_ASSET_CHART_TARGET_KEY,
 } from "@/lib/assets";
+import {
+  DEFAULT_MONEY_CHART_PREFERENCES,
+  loadMoneyChartPreferences,
+  saveMoneyChartPreferences,
+} from "@/lib/moneyChartPreferences";
 import type { AssetItem, AssetSnapshot } from "@/types";
 
+interface ChartTargetOption {
+  key: AssetChartTargetKey;
+  label: string;
+  shareLabel: string;
+  currentValue: number | null;
+  change: number | null;
+  lastUpdatedAt: string | null;
+  lastRecordedOn: string | null;
+  description: string;
+}
+
 export default function MoneyPage() {
-  const { data: assets = [] } = useAssets();
-  const { data: snapshots = [] } = useAssetSnapshots();
+  const assetsQuery = useAssets();
+  const snapshotsQuery = useAssetSnapshots();
+  const assets = assetsQuery.data ?? [];
+  const snapshots = snapshotsQuery.data ?? [];
   const deleteAssetMutation = useDeleteAsset();
   const deleteSnapshotMutation = useDeleteAssetSnapshot();
   const [assetModalOpen, setAssetModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<AssetItem | null>(null);
   const [editingSnapshot, setEditingSnapshot] = useState<AssetSnapshot | null>(null);
-  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
-  const [totalRange, setTotalRange] = useState<AssetChartRange>("3M");
-  const [assetRange, setAssetRange] = useState<AssetChartRange>("3M");
+  const [selectedTargetKey, setSelectedTargetKey] = useState<AssetChartTargetKey>(
+    DEFAULT_ASSET_CHART_TARGET_KEY
+  );
+  const [selectedRange, setSelectedRange] = useState<AssetChartRange>(DEFAULT_ASSET_CHART_RANGE);
+  const [defaultPreferences, setDefaultPreferences] = useState(DEFAULT_MONEY_CHART_PREFERENCES);
+  const [hasHydratedPreferences, setHasHydratedPreferences] = useState(false);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const assetSummaries = useMemo(
     () => buildAssetItemSummaries(assets, snapshots),
@@ -59,16 +89,39 @@ export default function MoneyPage() {
     () => sortSnapshotsRecentFirst(snapshots),
     [snapshots]
   );
+  const validTargetKeys = useMemo<AssetChartTargetKey[]>(
+    () => [TOTAL_ASSET_CHART_TARGET_KEY, ...assetSummaries.map((summary) => buildAssetChartTargetKey(summary.asset.id))],
+    [assetSummaries]
+  );
+  const selectedAssetId = useMemo(
+    () => parseAssetIdFromChartTargetKey(selectedTargetKey),
+    [selectedTargetKey]
+  );
 
   useEffect(() => {
-    if (assets.length === 0) {
-      setSelectedAssetId(null);
+    if (assetsQuery.isLoading) return;
+
+    const preferences = loadMoneyChartPreferences(validTargetKeys);
+    setDefaultPreferences(preferences);
+
+    if (!hasHydratedPreferences) {
+      setSelectedTargetKey(preferences.defaultTargetKey);
+      setSelectedRange(preferences.defaultRange);
+      setHasHydratedPreferences(true);
       return;
     }
 
-    if (selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)) return;
-    setSelectedAssetId(assets[0].id);
-  }, [assets, selectedAssetId]);
+    setSelectedTargetKey((current) =>
+      validTargetKeys.includes(current) ? current : preferences.defaultTargetKey
+    );
+  }, [assetsQuery.isLoading, hasHydratedPreferences, validTargetKeys]);
+
+  useEffect(() => {
+    if (!savedMessage) return;
+
+    const timeoutId = window.setTimeout(() => setSavedMessage(null), 2500);
+    return () => window.clearTimeout(timeoutId);
+  }, [savedMessage]);
 
   const selectedSummary =
     assetSummaries.find((summary) => summary.asset.id === selectedAssetId) ?? null;
@@ -76,14 +129,53 @@ export default function MoneyPage() {
     () => snapshots.filter((snapshot) => snapshot.asset_item_id === selectedAssetId),
     [selectedAssetId, snapshots]
   );
-  const totalChartPoints = useMemo(
-    () => buildTotalChartPoints(snapshots, totalRange, assetNamesById),
-    [assetNamesById, snapshots, totalRange]
+  const chartTargetOptions = useMemo<ChartTargetOption[]>(
+    () => [
+      {
+        key: TOTAL_ASSET_CHART_TARGET_KEY,
+        label: "総資産",
+        shareLabel: "100%",
+        currentValue: portfolioSummary.totalValue,
+        change: portfolioSummary.change,
+        lastUpdatedAt: portfolioSummary.lastUpdatedAt,
+        lastRecordedOn: portfolioSummary.lastRecordedOn,
+        description: "全資産項目の最新記録額を合算した推移を確認できます",
+      },
+      ...assetSummaries.map((summary) => ({
+        key: buildAssetChartTargetKey(summary.asset.id),
+        label: summary.asset.name,
+        shareLabel: formatSharePercentage(
+          calculateAssetShare(summary.currentValue, portfolioSummary.totalValue)
+        ),
+        currentValue: summary.currentValue,
+        change: summary.change,
+        lastUpdatedAt: summary.latestSnapshot?.updated_at ?? null,
+        lastRecordedOn: summary.latestSnapshot?.recorded_on ?? null,
+        description: summary.asset.description || "この資産項目の推移をチャートで確認できます",
+      })),
+    ],
+    [assetSummaries, portfolioSummary]
   );
-  const assetChartPoints = useMemo(
-    () => buildAssetChartPoints(selectedAssetSnapshots, assetRange, selectedSummary?.asset.name),
-    [assetRange, selectedAssetSnapshots, selectedSummary?.asset.name]
+  const selectedTarget =
+    chartTargetOptions.find((option) => option.key === selectedTargetKey) ?? chartTargetOptions[0];
+  const chartPoints = useMemo(
+    () =>
+      selectedTargetKey === TOTAL_ASSET_CHART_TARGET_KEY
+        ? buildTotalChartPoints(snapshots, selectedRange, assetNamesById)
+        : buildAssetChartPoints(selectedAssetSnapshots, selectedRange, selectedSummary?.asset.name),
+    [assetNamesById, selectedAssetSnapshots, selectedRange, selectedSummary?.asset.name, selectedTargetKey, snapshots]
   );
+  const chartSubtitle =
+    selectedTargetKey === TOTAL_ASSET_CHART_TARGET_KEY
+      ? "各資産項目の最新記録額を合算した総資産推移です"
+      : `${selectedTarget?.label ?? "選択中の資産"} の推移です`;
+  const chartEmptyMessage =
+    selectedTargetKey === TOTAL_ASSET_CHART_TARGET_KEY
+      ? "資産記録が入ると総資産チャートが表示されます"
+      : "選択した資産項目に記録がまだありません";
+  const isCurrentViewSavedDefault =
+    defaultPreferences.defaultTargetKey === selectedTargetKey &&
+    defaultPreferences.defaultRange === selectedRange;
 
   const handleEditAsset = (asset: AssetItem) => {
     setEditingAsset(asset);
@@ -107,13 +199,26 @@ export default function MoneyPage() {
     deleteSnapshotMutation.mutate(snapshot.id);
   };
 
+  const handleSaveDefaultView = () => {
+    const nextPreferences = {
+      defaultTargetKey: selectedTargetKey,
+      defaultRange: selectedRange,
+    };
+
+    saveMoneyChartPreferences(nextPreferences, validTargetKeys);
+    setDefaultPreferences(nextPreferences);
+    setSavedMessage("現在の表示を次回の初期表示として保存しました");
+  };
+
   return (
     <>
       <div className="space-y-5 sm:space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-display font-bold text-slate-900 sm:text-2xl">資産管理</h1>
-            <p className="mt-1 text-sm text-slate-500">総資産と項目別推移を、記録イベントベースで管理します</p>
+            <p className="mt-1 text-sm text-slate-500">
+              最新一覧で全体を把握し、統合チャートで総資産と各項目の推移を切り替えて確認できます
+            </p>
           </div>
           <button
             onClick={() => {
@@ -126,180 +231,125 @@ export default function MoneyPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="card flex items-start gap-3 sm:gap-4">
-            <div className="rounded-xl bg-emerald-50 p-2">
-              <Wallet size={20} className="text-emerald-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-slate-500">総資産</p>
-              <p className="amount-text mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
-                {portfolioSummary.totalValue == null ? "未記録" : formatCurrency(portfolioSummary.totalValue)}
-              </p>
-            </div>
-          </div>
-
-          <div className="card flex items-start gap-3 sm:gap-4">
-            <div className="rounded-xl bg-brand-50 p-2">
-              <ArrowUpRight size={20} className="text-brand-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-slate-500">前回記録比</p>
-              <p
-                className={`amount-text mt-1 text-xl font-bold sm:text-2xl ${
-                  portfolioSummary.change == null
-                    ? "text-slate-900"
-                    : portfolioSummary.change >= 0
-                      ? "text-emerald-600"
-                      : "text-red-500"
-                }`}
-              >
-                {formatSignedCurrency(portfolioSummary.change)}
-              </p>
-            </div>
-          </div>
-
-          <div className="card flex items-start gap-3 sm:gap-4">
-            <div className="rounded-xl bg-amber-50 p-2">
-              <Clock3 size={20} className="text-amber-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-slate-500">最終更新日時</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-base">
-                {portfolioSummary.lastUpdatedAt ? formatDateTime(portfolioSummary.lastUpdatedAt) : "未記録"}
-              </p>
-            </div>
-          </div>
-
-          <div className="card flex items-start gap-3 sm:gap-4">
-            <div className="rounded-xl bg-violet-50 p-2">
-              <Boxes size={20} className="text-violet-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-slate-500">登録中の資産項目数</p>
-              <p className="amount-text mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
-                {portfolioSummary.assetCount}
-              </p>
-            </div>
-          </div>
-        </div>
-
         <PortfolioChart
-          title="総資産チャート"
-          subtitle="各資産項目の最新記録額を合計した、総資産の推移です"
-          points={totalChartPoints}
-          range={totalRange}
-          onRangeChange={setTotalRange}
+          title="資産推移チャート"
+          subtitle={chartSubtitle}
+          tooltipTitle={selectedTarget?.label ?? "資産推移"}
+          points={chartPoints}
+          range={selectedRange}
+          onRangeChange={setSelectedRange}
           color="#2563eb"
-          emptyMessage="資産記録が入ると総資産チャートが表示されます"
+          emptyMessage={chartEmptyMessage}
+          chartHeight={380}
+          headerContent={
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0">
+                    <label className="text-xs font-medium text-slate-500">チャート対象</label>
+                    <select
+                      value={selectedTargetKey}
+                      onChange={(event) => setSelectedTargetKey(event.target.value as AssetChartTargetKey)}
+                      className="input mt-2 min-h-12 min-w-0 py-3 text-sm sm:max-w-md"
+                    >
+                      {chartTargetOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {`${option.label} (${option.shareLabel})`}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="mt-3 text-lg font-semibold text-slate-900">
+                        {selectedTarget?.label ?? "総資産"}
+                      </h3>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
+                        全体比 {selectedTarget?.shareLabel ?? "100%"}
+                      </span>
+                      {selectedTarget?.lastRecordedOn && (
+                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
+                          最終記録日 {formatRecordedOn(selectedTarget.lastRecordedOn)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {selectedTarget?.description ?? "総資産と資産項目を同じチャートで確認できます"}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                    <button
+                      type="button"
+                      onClick={handleSaveDefaultView}
+                      className="btn-ghost justify-center px-3 py-2 text-sm"
+                    >
+                      現在の表示を初期値に保存
+                    </button>
+                    <p className="text-xs text-slate-400">
+                      {isCurrentViewSavedDefault
+                        ? "この表示が初期表示に設定されています"
+                        : "次回以降の初期表示を変更できます"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3">
+                    <p className="text-xs font-medium text-slate-400">現在値</p>
+                    <p className="amount-text mt-1 text-base font-semibold text-slate-900 sm:text-lg">
+                      {selectedTarget?.currentValue == null ? "未記録" : formatCurrency(selectedTarget.currentValue)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3">
+                    <p className="text-xs font-medium text-slate-400">前回記録比</p>
+                    <p
+                      className={`amount-text mt-1 text-base font-semibold sm:text-lg ${
+                        selectedTarget?.change == null
+                          ? "text-slate-900"
+                          : selectedTarget.change >= 0
+                            ? "text-emerald-600"
+                            : "text-red-500"
+                      }`}
+                    >
+                      {formatSignedCurrency(selectedTarget?.change ?? null)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3">
+                    <p className="text-xs font-medium text-slate-400">最終更新日時</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
+                      {selectedTarget?.lastUpdatedAt ? formatDateTime(selectedTarget.lastUpdatedAt) : "未記録"}
+                    </p>
+                  </div>
+                </div>
+
+                {savedMessage && <p className="mt-3 text-xs font-medium text-emerald-600">{savedMessage}</p>}
+              </div>
+            </div>
+          }
         />
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr,1fr]">
-          <PortfolioChart
-            title="資産項目別チャート"
-            subtitle={
-              selectedSummary
-                ? `${selectedSummary.asset.name} の推移を折れ線チャートで表示しています`
-                : "表示する資産項目を選択してください"
-            }
-            points={assetChartPoints}
-            range={assetRange}
-            onRangeChange={setAssetRange}
-            color="#2563eb"
-            emptyMessage="選択した資産項目に記録がまだありません"
-            controls={
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <select
-                  value={selectedAssetId ?? ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setSelectedAssetId(value ? Number(value) : null);
-                  }}
-                  className="input min-w-52 py-2.5"
-                  disabled={assets.length === 0}
-                >
-                  <option value="">資産項目を選択してください</option>
-                  {assetSummaries.map((summary) => (
-                    <option key={summary.asset.id} value={summary.asset.id}>
-                      {summary.asset.name}
-                    </option>
-                  ))}
-                </select>
-                {selectedSummary && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-xs text-slate-500">
-                    現在値{" "}
-                    <span className="amount-text inline-block">
-                      {selectedSummary.currentValue == null ? "未記録" : formatCurrency(selectedSummary.currentValue)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            }
-          />
+        <AssetCurrentList
+          items={assetSummaries}
+          selectedAssetId={selectedAssetId}
+          onSelect={(assetId) => setSelectedTargetKey(buildAssetChartTargetKey(assetId))}
+          onEdit={handleEditAsset}
+          onDelete={handleDeleteAsset}
+        />
 
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.95fr,1.05fr]">
           <AssetSnapshotForm
             assets={assets}
             assetSummaries={assetSummaries}
             editingSnapshot={editingSnapshot}
             onEditingSnapshotChange={setEditingSnapshot}
           />
-        </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr,0.85fr]">
-          <AssetCurrentList
-            items={assetSummaries}
-            selectedAssetId={selectedAssetId}
-            onSelect={setSelectedAssetId}
-            onEdit={handleEditAsset}
-            onDelete={handleDeleteAsset}
+          <AssetSnapshotHistory
+            snapshots={recentSnapshots}
+            assetsById={assetsById}
+            onEdit={handleEditSnapshot}
+            onDelete={handleDeleteSnapshot}
           />
-
-          <div className="card">
-            <h2 className="font-semibold text-slate-800">現在の把握ポイント</h2>
-            <div className="mt-4 space-y-3 text-sm text-slate-600">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <p className="text-xs font-medium text-slate-400">選択中の資産</p>
-                <p className="mt-1 text-base font-semibold text-slate-900">
-                  {selectedSummary?.asset.name ?? "未選択"}
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  {selectedSummary?.asset.description || "資産項目を選ぶと、ここに説明を表示します"}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <p className="text-xs font-medium text-slate-400">最終記録日</p>
-                <p className="mt-1 text-base font-semibold text-slate-900">
-                  {selectedSummary?.latestSnapshot
-                    ? formatRecordedOn(selectedSummary.latestSnapshot.recorded_on)
-                    : "未記録"}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <p className="text-xs font-medium text-slate-400">前回との差分</p>
-                <p
-                  className={`amount-text mt-1 text-base font-semibold ${
-                    selectedSummary?.change == null
-                      ? "text-slate-900"
-                      : selectedSummary.change >= 0
-                        ? "text-emerald-600"
-                        : "text-red-500"
-                  }`}
-                >
-                  {formatSignedCurrency(selectedSummary?.change ?? null)}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
-
-        <AssetSnapshotHistory
-          snapshots={recentSnapshots}
-          assetsById={assetsById}
-          onEdit={handleEditSnapshot}
-          onDelete={handleDeleteSnapshot}
-        />
       </div>
 
       <AssetItemModal

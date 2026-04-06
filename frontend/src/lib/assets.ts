@@ -11,9 +11,16 @@ import {
 import { ja } from "date-fns/locale";
 import type { AssetItem, AssetSnapshot } from "@/types";
 
-export type AssetChartRange = "1D" | "7D" | "1M" | "3M" | "1Y" | "ALL";
+export type AssetChartRange = "1D" | "7D" | "1M" | "3M" | "1Y" | "3Y" | "5Y" | "ALL";
 
-export const CHART_RANGE_OPTIONS: AssetChartRange[] = ["1D", "7D", "1M", "3M", "1Y", "ALL"];
+export const CHART_RANGE_OPTIONS: AssetChartRange[] = ["1D", "7D", "1M", "3M", "1Y", "3Y", "5Y", "ALL"];
+
+export const TOTAL_ASSET_CHART_TARGET_KEY = "total";
+
+export type AssetChartTargetKey = typeof TOTAL_ASSET_CHART_TARGET_KEY | `asset:${number}`;
+
+export const DEFAULT_ASSET_CHART_TARGET_KEY: AssetChartTargetKey = TOTAL_ASSET_CHART_TARGET_KEY;
+export const DEFAULT_ASSET_CHART_RANGE: AssetChartRange = "3M";
 
 export interface AssetChartPoint {
   timestamp: number;
@@ -96,6 +103,34 @@ export function formatChartTooltipDate(timestamp: number) {
   return format(new Date(timestamp), "yyyy/MM/dd", { locale: ja });
 }
 
+export function isAssetChartRange(value: string): value is AssetChartRange {
+  return (CHART_RANGE_OPTIONS as string[]).includes(value);
+}
+
+export function buildAssetChartTargetKey(assetId: number): AssetChartTargetKey {
+  return `asset:${assetId}`;
+}
+
+export function parseAssetIdFromChartTargetKey(targetKey: AssetChartTargetKey) {
+  if (targetKey === TOTAL_ASSET_CHART_TARGET_KEY) return null;
+
+  const assetId = Number(targetKey.replace("asset:", ""));
+  return Number.isNaN(assetId) ? null : assetId;
+}
+
+export function calculateAssetShare(currentValue: number | null, totalValue: number | null) {
+  if (currentValue == null || totalValue == null || totalValue <= 0) return 0;
+  return Math.max(0, Math.min(100, (currentValue / totalValue) * 100));
+}
+
+export function formatSharePercentage(share: number) {
+  if (!Number.isFinite(share) || share <= 0) return "0%";
+  if (share >= 99.95) return "100%";
+
+  const rounded = share >= 10 ? Math.round(share) : Number(share.toFixed(1));
+  return `${rounded}%`;
+}
+
 function snapshotTimestamp(snapshot: AssetSnapshot) {
   return startOfDay(parseISO(snapshot.recorded_on)).getTime();
 }
@@ -163,6 +198,8 @@ function getRangeStart(range: AssetChartRange, end: Date, earliest: AssetSnapsho
   if (range === "7D") return startOfDay(subDays(end, 7));
   if (range === "1M") return startOfDay(subMonths(end, 1));
   if (range === "3M") return startOfDay(subMonths(end, 3));
+  if (range === "3Y") return startOfDay(subYears(end, 3));
+  if (range === "5Y") return startOfDay(subYears(end, 5));
 
   return startOfDay(subYears(end, 1));
 }
