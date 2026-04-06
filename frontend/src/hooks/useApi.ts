@@ -9,6 +9,11 @@ import type {
   Memo,
   MemoForm,
   FileItem,
+  MessageResponse,
+  PasswordForm,
+  ProfileForm,
+  RecordResetFeature,
+  UserResponse,
 } from "@/types";
 
 function invalidateAssetQueries(qc: ReturnType<typeof useQueryClient>) {
@@ -156,5 +161,42 @@ export function useDeleteFile() {
   return useMutation({
     mutationFn: (id: number) => api.delete(`/files/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["files"] }),
+  });
+}
+
+// ─── Settings / Account ────────────────────────────────────────
+export function useUpdateProfile() {
+  return useMutation({
+    mutationFn: (data: ProfileForm) =>
+      api.patch<UserResponse>("/me", { user: data }).then((r) => r.data),
+  });
+}
+
+export function useUpdatePassword() {
+  return useMutation({
+    mutationFn: (data: PasswordForm) =>
+      api.patch<MessageResponse>("/me/password", { user: data }).then((r) => r.data),
+  });
+}
+
+export function useResetRecords() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (feature: RecordResetFeature) =>
+      api.delete<MessageResponse>(`/records/${feature}`).then((r) => r.data),
+    onSuccess: (_, feature) => {
+      if (feature === "assets") {
+        invalidateAssetQueries(qc);
+      }
+
+      if (feature === "memos") {
+        qc.invalidateQueries({ queryKey: ["memos"] });
+      }
+
+      if (feature === "files") {
+        qc.invalidateQueries({ queryKey: ["files"] });
+      }
+    },
   });
 }

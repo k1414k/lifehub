@@ -7,6 +7,7 @@ import { z } from "zod";
 import { X } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api";
 import { useCreateAsset, useUpdateAsset } from "@/hooks/useApi";
+import { useActivityLogStore } from "@/stores/activityLogStore";
 import type { AssetItem } from "@/types";
 
 const schema = z.object({
@@ -25,6 +26,7 @@ interface Props {
 export default function AssetItemModal({ open, asset, onClose }: Props) {
   const createMutation = useCreateAsset();
   const updateMutation = useUpdateAsset();
+  const addActivity = useActivityLogStore((state) => state.addItem);
   const mutation = asset ? updateMutation : createMutation;
   const {
     register,
@@ -54,8 +56,10 @@ export default function AssetItemModal({ open, asset, onClose }: Props) {
         id: asset.id,
         data: values,
       });
+      addActivity(`「${values.name}」を更新しました`);
     } else {
       await createMutation.mutateAsync(values);
+      addActivity(`「${values.name}」を追加しました`);
     }
 
     reset({
@@ -69,17 +73,17 @@ export default function AssetItemModal({ open, asset, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl">
-        <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-4 py-4 sm:px-6">
+      <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-xl dark:bg-slate-900 sm:max-w-lg sm:rounded-2xl">
+        <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
           <div>
-            <h2 className="font-semibold text-slate-800">
+            <h2 className="font-semibold text-slate-800 dark:text-slate-100">
               {asset ? "資産項目を編集" : "資産項目を追加"}
             </h2>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
               現金や株式のような保有資産を自由に管理できます
             </p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-slate-100">
+          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">
             <X size={16} />
           </button>
         </div>
@@ -102,7 +106,7 @@ export default function AssetItemModal({ open, asset, onClose }: Props) {
           </div>
 
           {mutation.error && (
-            <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-300">
               {getApiErrorMessage(mutation.error)}
             </p>
           )}

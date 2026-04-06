@@ -12,6 +12,9 @@ Rails.application.routes.draw do
     namespace :v1 do
       # User info
       get  "me", to: "users#me"
+      patch "me", to: "users#update"
+      patch "me/password", to: "users#update_password"
+      delete "records/:feature", to: "records#destroy"
 
       # Assets
       resources :assets, only: %i[index create update destroy]

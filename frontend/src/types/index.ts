@@ -12,6 +12,14 @@ export interface AuthResponse {
   errors?: string[];
 }
 
+export interface MessageResponse {
+  message: string;
+}
+
+export interface UserResponse extends MessageResponse {
+  data: User;
+}
+
 // ========== Assets ==========
 export interface AssetItem {
   id: number;
@@ -99,6 +107,18 @@ export interface MemoForm {
   memo_type: MemoType;
   deadline_at?: string | null;
 }
+
+export interface ProfileForm {
+  name: string;
+}
+
+export interface PasswordForm {
+  current_password: string;
+  password: string;
+  password_confirmation: string;
+}
+
+export type RecordResetFeature = "assets" | "memos" | "files" | "transactions";
 
 // ========== Files ==========
 export interface FileItem {

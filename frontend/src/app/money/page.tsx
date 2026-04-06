@@ -38,6 +38,7 @@ import {
   loadMoneyChartPreferences,
   saveMoneyChartPreferences,
 } from "@/lib/moneyChartPreferences";
+import { useActivityLogStore } from "@/stores/activityLogStore";
 import type { AssetItem, AssetSnapshot } from "@/types";
 
 interface ChartTargetOption {
@@ -58,6 +59,7 @@ export default function MoneyPage() {
   const snapshots = snapshotsQuery.data ?? [];
   const deleteAssetMutation = useDeleteAsset();
   const deleteSnapshotMutation = useDeleteAssetSnapshot();
+  const addActivity = useActivityLogStore((state) => state.addItem);
   const [assetModalOpen, setAssetModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<AssetItem | null>(null);
   const [editingSnapshot, setEditingSnapshot] = useState<AssetSnapshot | null>(null);
@@ -184,7 +186,9 @@ export default function MoneyPage() {
 
   const handleDeleteAsset = (asset: AssetItem) => {
     if (!window.confirm(`「${asset.name}」を削除しますか？関連する記録履歴も削除されます。`)) return;
-    deleteAssetMutation.mutate(asset.id);
+    deleteAssetMutation.mutate(asset.id, {
+      onSuccess: () => addActivity(`「${asset.name}」を削除しました`),
+    });
   };
 
   const handleEditSnapshot = (snapshot: AssetSnapshot) => {
@@ -196,7 +200,9 @@ export default function MoneyPage() {
     const assetName = assetsById.get(snapshot.asset_item_id)?.name ?? "この資産";
 
     if (!window.confirm(`${assetName} の ${formatRecordedOn(snapshot.recorded_on)} の記録を削除しますか？`)) return;
-    deleteSnapshotMutation.mutate(snapshot.id);
+    deleteSnapshotMutation.mutate(snapshot.id, {
+      onSuccess: () => addActivity(`${assetName} の記録を削除しました`),
+    });
   };
 
   const handleSaveDefaultView = () => {
@@ -215,8 +221,8 @@ export default function MoneyPage() {
       <div className="space-y-5 sm:space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-display font-bold text-slate-900 sm:text-2xl">資産管理</h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <h1 className="text-xl font-display font-bold text-slate-900 dark:text-slate-50 sm:text-2xl">資産管理</h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               最新一覧で全体を把握し、統合チャートで総資産と各項目の推移を切り替えて確認できます
             </p>
           </div>
@@ -243,10 +249,10 @@ export default function MoneyPage() {
           chartHeight={380}
           headerContent={
             <div className="space-y-4">
-              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-950/60 sm:p-5">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0">
-                    <label className="text-xs font-medium text-slate-500">チャート対象</label>
+                    <label className="text-xs font-medium text-slate-500 dark:text-slate-400">チャート対象</label>
                     <select
                       value={selectedTargetKey}
                       onChange={(event) => setSelectedTargetKey(event.target.value as AssetChartTargetKey)}
@@ -259,19 +265,19 @@ export default function MoneyPage() {
                       ))}
                     </select>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="mt-3 text-lg font-semibold text-slate-900">
+                      <h3 className="mt-3 text-lg font-semibold text-slate-900 dark:text-slate-50">
                         {selectedTarget?.label ?? "総資産"}
                       </h3>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                         全体比 {selectedTarget?.shareLabel ?? "100%"}
                       </span>
                       {selectedTarget?.lastRecordedOn && (
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
+                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                           最終記録日 {formatRecordedOn(selectedTarget.lastRecordedOn)}
                         </span>
                       )}
                     </div>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                       {selectedTarget?.description ?? "総資産と資産項目を同じチャートで確認できます"}
                     </p>
                   </div>
@@ -284,7 +290,7 @@ export default function MoneyPage() {
                     >
                       現在の表示を初期値に保存
                     </button>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
                       {isCurrentViewSavedDefault
                         ? "この表示が初期表示に設定されています"
                         : "次回以降の初期表示を変更できます"}
@@ -293,18 +299,18 @@ export default function MoneyPage() {
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3">
-                    <p className="text-xs font-medium text-slate-400">現在値</p>
-                    <p className="amount-text mt-1 text-base font-semibold text-slate-900 sm:text-lg">
+                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500">現在値</p>
+                    <p className="amount-text mt-1 text-base font-semibold text-slate-900 dark:text-slate-100 sm:text-lg">
                       {selectedTarget?.currentValue == null ? "未記録" : formatCurrency(selectedTarget.currentValue)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3">
-                    <p className="text-xs font-medium text-slate-400">前回記録比</p>
+                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500">前回記録比</p>
                     <p
                       className={`amount-text mt-1 text-base font-semibold sm:text-lg ${
                         selectedTarget?.change == null
-                          ? "text-slate-900"
+                          ? "text-slate-900 dark:text-slate-100"
                           : selectedTarget.change >= 0
                             ? "text-emerald-600"
                             : "text-red-500"
@@ -313,9 +319,9 @@ export default function MoneyPage() {
                       {formatSignedCurrency(selectedTarget?.change ?? null)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3">
-                    <p className="text-xs font-medium text-slate-400">最終更新日時</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
+                  <div className="rounded-2xl border border-white/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500">最終更新日時</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 sm:text-base">
                       {selectedTarget?.lastUpdatedAt ? formatDateTime(selectedTarget.lastUpdatedAt) : "未記録"}
                     </p>
                   </div>
@@ -335,7 +341,7 @@ export default function MoneyPage() {
           onDelete={handleDeleteAsset}
         />
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.95fr,1.05fr]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.82fr,1.18fr]">
           <AssetSnapshotForm
             assets={assets}
             assetSummaries={assetSummaries}

@@ -47,16 +47,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4 py-8 sm:p-6">
+    <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4 py-8 dark:bg-slate-950 sm:p-6">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center sm:mb-8">
           <span className="font-display text-3xl font-bold text-brand-600">LifeHub</span>
-          <p className="mt-2 text-sm text-slate-500">ログインして続ける</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">ログインして続ける</p>
         </div>
         <div className="card">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {errors.root && (
-              <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-2">{errors.root.message}</p>
+              <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-500 dark:bg-red-500/10 dark:text-red-300">{errors.root.message}</p>
             )}
             <div>
               <label className="label">メールアドレス</label>
@@ -72,7 +72,7 @@ export default function LoginPage() {
               {isSubmitting ? "ログイン中..." : "ログイン"}
             </button>
           </form>
-          <p className="text-center text-sm text-slate-500 mt-4">
+          <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
             アカウントがない場合は{" "}
             <Link href="/auth/register" className="text-brand-600 hover:underline font-medium">新規登録</Link>
           </p>

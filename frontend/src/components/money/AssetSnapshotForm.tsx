@@ -17,6 +17,7 @@ import {
   useCreateAssetSnapshotBatch,
   useUpdateAssetSnapshot,
 } from "@/hooks/useApi";
+import { useActivityLogStore } from "@/stores/activityLogStore";
 import type { AssetItem, AssetSnapshot } from "@/types";
 
 const singleSchema = z.object({
@@ -55,6 +56,7 @@ export default function AssetSnapshotForm({
   const createMutation = useCreateAssetSnapshot();
   const updateMutation = useUpdateAssetSnapshot();
   const batchMutation = useCreateAssetSnapshotBatch();
+  const addActivity = useActivityLogStore((state) => state.addItem);
   const [mode, setMode] = useState<FormMode>("single");
   const [batchDate, setBatchDate] = useState(todayString());
   const [batchNote, setBatchNote] = useState("");
@@ -129,9 +131,13 @@ export default function AssetSnapshotForm({
         id: editingSnapshot.id,
         data: payload,
       });
+      const assetName = summaryById.get(payload.asset_item_id)?.asset.name ?? "資産";
+      addActivity(`${assetName} の記録を更新しました`);
       onEditingSnapshotChange(null);
     } else {
       await createMutation.mutateAsync(payload);
+      const assetName = summaryById.get(payload.asset_item_id)?.asset.name ?? "資産";
+      addActivity(`${assetName} を記録しました`);
     }
 
     reset({
@@ -177,6 +183,7 @@ export default function AssetSnapshotForm({
       note: batchNote.trim() || undefined,
       items,
     });
+    addActivity(`${items.length}件の資産を一括記録しました`);
 
     setBatchValues({});
     setBatchNote("");
@@ -188,13 +195,13 @@ export default function AssetSnapshotForm({
     <div id="snapshot-recorder" className="card">
       <div className="flex flex-col gap-4">
         <div>
-          <h2 className="font-semibold text-slate-800">スナップショットを記録</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100">スナップショットを記録</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             単一更新と一括記録の両方に対応しています
           </p>
         </div>
 
-        <div className="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+        <div className="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
           {[
             { id: "single" as const, label: "単一更新", icon: PencilLine },
             { id: "batch" as const, label: "一括記録", icon: Layers3 },
@@ -204,7 +211,7 @@ export default function AssetSnapshotForm({
               type="button"
               onClick={() => setMode(id)}
               className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                mode === id ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                mode === id ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-50" : "text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-50"
               }`}
             >
               <Icon size={14} />
@@ -216,10 +223,10 @@ export default function AssetSnapshotForm({
         {mode === "single" ? (
           <form onSubmit={handleSubmit(handleSingleSubmit)} className="space-y-4">
             {editingSnapshot && (
-              <div className="flex items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-brand-50/60 px-4 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-brand-50/60 px-4 py-3 dark:border-brand-500/20 dark:bg-brand-500/10">
                 <div>
-                  <p className="text-sm font-medium text-brand-700">履歴を編集中です</p>
-                  <p className="mt-1 text-xs text-brand-600">
+                  <p className="text-sm font-medium text-brand-700 dark:text-brand-200">履歴を編集中です</p>
+                  <p className="mt-1 text-xs text-brand-600 dark:text-brand-300">
                     保存すると、この記録の金額と日付が更新されます
                   </p>
                 </div>
@@ -252,7 +259,7 @@ export default function AssetSnapshotForm({
                 <p className="mt-1 text-xs text-red-500">{errors.asset_item_id.message}</p>
               )}
               {editingSnapshot && (
-                <p className="mt-1 text-xs text-slate-400">編集中は資産項目自体の付け替えはできません。</p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">編集中は資産項目自体の付け替えはできません。</p>
               )}
             </div>
 
@@ -281,13 +288,13 @@ export default function AssetSnapshotForm({
               />
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
-              <p className="text-xs font-medium text-slate-500">現在値の参考</p>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/60">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">現在値の参考</p>
               <div className="mt-2 space-y-2">
                 {assetSummaries.map((summary) => (
                   <div key={summary.asset.id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-slate-600">{summary.asset.name}</span>
-                    <span className="amount-text font-medium text-slate-900">
+                    <span className="text-slate-600 dark:text-slate-300">{summary.asset.name}</span>
+                    <span className="amount-text font-medium text-slate-900 dark:text-slate-100">
                       {summary.currentValue == null ? "未記録" : formatCurrency(summary.currentValue)}
                     </span>
                   </div>
@@ -296,7 +303,7 @@ export default function AssetSnapshotForm({
             </div>
 
             {singleError && (
-              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-300">
                 {getApiErrorMessage(singleError)}
               </p>
             )}
@@ -341,11 +348,11 @@ export default function AssetSnapshotForm({
                 const summary = summaryById.get(asset.id);
 
                 return (
-                  <div key={asset.id} className="rounded-2xl border border-slate-200 p-4">
+                  <div key={asset.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{asset.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{asset.name}</p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                           現在値:{" "}
                           <span className="amount-text">
                             {summary?.currentValue == null ? "未記録" : formatCurrency(summary.currentValue)}
@@ -371,15 +378,15 @@ export default function AssetSnapshotForm({
             </div>
 
             {batchError && (
-              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{batchError}</p>
+              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-300">{batchError}</p>
             )}
             {batchMutation.error && (
-              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-300">
                 {getApiErrorMessage(batchMutation.error)}
               </p>
             )}
 
-            <p className="text-xs text-slate-400">空欄の資産項目は今回の一括記録では更新しません。</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">空欄の資産項目は今回の一括記録では更新しません。</p>
 
             <button
               type="submit"

@@ -135,9 +135,11 @@ project/
 | Method | Path | 説明 |
 |---|---|---|
 | POST | `/api/v1/auth` | 新規登録 |
-| POST | `/api/v1/auth/sign_in` | ログイン → `Authorization: Bearer <token>` を返す |
+| POST | `/api/v1/auth/sign_in` | ログイン → `Authorization: Bearer <token>` を返す（同一ブラウザでは最長7日保持） |
 | DELETE | `/api/v1/auth/sign_out` | ログアウト |
 | GET | `/api/v1/me` | 自分の情報取得 |
+| PATCH | `/api/v1/me` | 自分の表示名更新 |
+| PATCH | `/api/v1/me/password` | 自分のパスワード更新 |
 
 ### 資産管理
 | Method | Path | 説明 |
@@ -174,6 +176,13 @@ project/
 | GET | `/api/v1/files` | 一覧 |
 | POST | `/api/v1/files` | アップロード（multipart/form-data） |
 | DELETE | `/api/v1/files/:id` | 削除 |
+
+### 設定 / 記録初期化
+| Method | Path | 説明 |
+|---|---|---|
+| DELETE | `/api/v1/records/assets` | 資産項目と資産記録を初期化 |
+| DELETE | `/api/v1/records/memos` | メモを初期化 |
+| DELETE | `/api/v1/records/files` | ファイルを初期化 |
 
 ---
 

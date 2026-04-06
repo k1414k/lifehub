@@ -76,4 +76,56 @@ RSpec.describe "Api::V1::Auth", type: :request do
       expect(body["created_at"]).to be_present
     end
   end
+
+  describe "PATCH /api/v1/me" do
+    let!(:user) { create(:user, name: "変更前ユーザー") }
+
+    it "updates the current user profile" do
+      patch "/api/v1/me",
+        params: { user: { name: "変更後ニックネーム" } }.to_json,
+        headers: sign_in_headers(user)
+
+      expect(response).to have_http_status(:ok)
+
+      body = JSON.parse(response.body)
+      expect(body["message"]).to eq("アカウント情報を更新しました")
+      expect(body.dig("data", "name")).to eq("変更後ニックネーム")
+      expect(user.reload.name).to eq("変更後ニックネーム")
+    end
+  end
+
+  describe "PATCH /api/v1/me/password" do
+    let!(:user) { create(:user, password: "password", password_confirmation: "password") }
+
+    it "updates the password when current password is valid" do
+      patch "/api/v1/me/password",
+        params: {
+          user: {
+            current_password: "password",
+            password: "new-password",
+            password_confirmation: "new-password"
+          }
+        }.to_json,
+        headers: sign_in_headers(user)
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["message"]).to eq("パスワードを更新しました")
+      expect(user.reload.valid_password?("new-password")).to be(true)
+    end
+
+    it "rejects an invalid current password" do
+      patch "/api/v1/me/password",
+        params: {
+          user: {
+            current_password: "invalid-password",
+            password: "new-password",
+            password_confirmation: "new-password"
+          }
+        }.to_json,
+        headers: sign_in_headers(user)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(JSON.parse(response.body)["error"]).to eq("現在のパスワードが正しくありません")
+    end
+  end
 end
